@@ -1,86 +1,86 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+const navigation = [
+  { name: 'Home', href: '/' },
+  { name: 'Band', href: '/band' },
+  { name: 'Albums', href: '/albums' },
+  { name: 'Songs', href: '/songs' },
+  { name: 'Music', href: '/music' },
+  { name: 'Videos', href: '/videos' },
+  { name: 'Tours', href: '/tours' },
+  { name: 'Timeline', href: '/timeline' },
+]
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
-
-  const navItems = [
-    { href: '/', label: 'Home' },
-    { href: '/albums', label: 'Albums' },
-    { href: '/songs', label: 'Songs' },
-    { href: '/band', label: 'Band' },
-    { href: '/tours', label: 'Tours' },
-    { href: '/timeline', label: 'Timeline' },
-  ]
+  const pathname = usePathname()
 
   return (
-    <nav className="bg-white border-b-4 border-primary sticky top-0 z-50 shadow-lg">
+    <nav className="bg-white shadow-lg sticky top-0 z-40">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-pink-400 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">b</span>
-            </div>
-            <span className="font-bold text-xl text-gray-900">blink-182</span>
+            <span className="text-2xl font-bold text-gradient">blink-182</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
+            {navigation.map((item) => (
               <Link
-                key={item.href}
+                key={item.name}
                 href={item.href}
-                className="text-gray-600 hover:text-primary font-medium transition-colors duration-200 relative group"
+                className={`font-medium transition-colors hover:text-primary ${
+                  pathname === item.href
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-700'
+                }`}
               >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
+                {item.name}
               </Link>
             ))}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden flex flex-col space-y-1 w-6 h-6 justify-center"
-            aria-label="Toggle menu"
-          >
-            <motion.span
-              animate={isOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              className="w-6 h-0.5 bg-gray-600 block transition-all duration-300"
-            />
-            <motion.span
-              animate={isOpen ? { opacity: 0 } : { opacity: 1 }}
-              className="w-6 h-0.5 bg-gray-600 block transition-all duration-300"
-            />
-            <motion.span
-              animate={isOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              className="w-6 h-0.5 bg-gray-600 block transition-all duration-300"
-            />
-          </button>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-gray-700 hover:text-primary focus:outline-none focus:text-primary"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
-        <motion.div
-          animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-          className="md:hidden overflow-hidden"
-        >
-          <div className="py-4 space-y-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className="block text-gray-600 hover:text-primary font-medium transition-colors duration-200 py-2"
-              >
-                {item.label}
-              </Link>
-            ))}
+        {isOpen && (
+          <div className="md:hidden py-4 border-t border-gray-200">
+            <div className="flex flex-col space-y-3">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`font-medium transition-colors hover:text-primary ${
+                    pathname === item.href ? 'text-primary' : 'text-gray-700'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
           </div>
-        </motion.div>
+        )}
       </div>
     </nav>
   )
