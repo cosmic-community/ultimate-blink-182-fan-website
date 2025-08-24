@@ -1,19 +1,16 @@
 import { Metadata } from 'next'
 import { spotifyAPI } from '@/lib/spotify'
-import { getSongs, getAlbums } from '@/lib/cosmic'
 import SpotifyPlayer from '@/components/SpotifyPlayer'
-import type { Song, Album } from '@/types'
+import { getSongs } from '@/lib/cosmic'
 
 export const metadata: Metadata = {
-  title: 'Music - blink-182 Discography',
-  description: 'Explore the complete blink-182 discography including albums, singles, and popular tracks on Spotify.',
+  title: 'Music - blink-182 Spotify Integration',
+  description: 'Listen to blink-182 music directly from Spotify with our integrated music player.',
 }
 
 export default async function MusicPage() {
-  const [songs, albums] = await Promise.all([
-    getSongs(),
-    getAlbums()
-  ])
+  // Get songs from Cosmic to display alongside Spotify integration
+  const songs = await getSongs()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -21,150 +18,107 @@ export default async function MusicPage() {
       <section className="hero-gradient text-white py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Music & Discography
+            Music Player
           </h1>
           <p className="text-xl max-w-2xl mx-auto text-white text-opacity-90">
-            From pop-punk anthems to experimental masterpieces - explore the complete blink-182 catalog
+            Listen to blink-182's greatest hits directly from Spotify
           </p>
         </div>
       </section>
 
-      {/* Spotify Integration */}
+      {/* Content */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">
-              <span className="text-gradient">Listen on Spotify</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Stream the most popular blink-182 tracks
-            </p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <SpotifyPlayer searchQuery="blink-182" />
-          </div>
-        </div>
-      </section>
-
-      {/* Albums Section */}
-      {albums.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Albums</h2>
-              <p className="text-gray-600 text-lg">Studio albums and major releases</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {albums.map((album: Album) => (
-                <div key={album.id} className="bg-gray-50 rounded-xl shadow-lg overflow-hidden card-hover">
-                  {album.metadata?.album_art?.imgix_url && (
-                    <img
-                      src={`${album.metadata.album_art.imgix_url}?w=400&h=400&fit=crop&auto=format,compress`}
-                      alt={album.metadata.title || album.title}
-                      className="w-full aspect-square object-cover"
-                      width={200}
-                      height={200}
-                    />
-                  )}
-                  
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">
-                      {album.metadata?.title || album.title}
-                    </h3>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                      {album.metadata?.release_date && (
-                        <span>
-                          {new Date(album.metadata.release_date).getFullYear()}
-                        </span>
-                      )}
-                      {album.metadata?.record_label && (
-                        <span>{album.metadata.record_label}</span>
-                      )}
-                    </div>
-
-                    {album.metadata?.album_story && (
-                      <div 
-                        className="text-gray-700 text-sm line-clamp-3"
-                        dangerouslySetInnerHTML={{ 
-                          __html: album.metadata.album_story.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Songs Section */}
-      {songs.length > 0 && (
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">
-                <span className="text-gradient">Popular Songs</span>
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Spotify Player */}
+            <div>
+              <h2 className="text-3xl font-bold mb-8 text-center">
+                <span className="text-gradient">Spotify Integration</span>
               </h2>
-              <p className="text-gray-600 text-lg">Fan favorites and chart toppers</p>
+              <SpotifyPlayer searchQuery="blink-182" className="sticky top-4" />
             </div>
-            
-            <div className="max-w-4xl mx-auto">
-              <div className="grid gap-6">
-                {songs.map((song: Song) => (
-                  <div key={song.id} className="bg-white rounded-xl shadow-lg p-6 card-hover">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold mb-2 text-gray-900">
+
+            {/* Song Information */}
+            <div>
+              <h2 className="text-3xl font-bold mb-8 text-center">
+                <span className="text-gradient">Song Details</span>
+              </h2>
+              
+              {songs.length > 0 ? (
+                <div className="space-y-6">
+                  {songs.slice(0, 10).map((song) => (
+                    <div key={song.id} className="bg-white rounded-lg shadow-lg p-6 card-hover">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-bold text-gray-900">
                           {song.metadata?.title || song.title}
                         </h3>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                          {song.metadata?.album?.metadata?.title && (
-                            <span>Album: {song.metadata.album.metadata.title}</span>
-                          )}
-                          {song.metadata?.length && (
-                            <span>Duration: {song.metadata.length}</span>
-                          )}
-                          {song.metadata?.writers && (
-                            <span>Writers: {song.metadata.writers}</span>
-                          )}
-                        </div>
-
-                        {song.metadata?.fun_facts && (
-                          <div 
-                            className="text-gray-700 prose"
-                            dangerouslySetInnerHTML={{ __html: song.metadata.fun_facts }}
-                          />
+                        {song.metadata?.length && (
+                          <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            {song.metadata.length}
+                          </span>
                         )}
                       </div>
-
+                      
+                      <div className="space-y-3">
+                        {song.metadata?.album && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Album:</span> {song.metadata.album.title}
+                          </p>
+                        )}
+                        
+                        {song.metadata?.writers && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Writers:</span> {song.metadata.writers}
+                          </p>
+                        )}
+                        
+                        {song.metadata?.theme?.value && (
+                          <span className="inline-block bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-full text-xs font-medium">
+                            {song.metadata.theme.value}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {song.metadata?.fun_facts && (
+                        <div 
+                          className="mt-4 text-sm text-gray-700 prose prose-sm"
+                          dangerouslySetInnerHTML={{ __html: song.metadata.fun_facts }}
+                        />
+                      )}
+                      
                       {song.metadata?.music_video && (
-                        <div className="flex-shrink-0 ml-6">
+                        <div className="mt-4">
                           <a
                             href={song.metadata.music_video}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors inline-flex items-center gap-2"
+                            className="inline-flex items-center text-primary hover:text-primary-600 font-medium text-sm"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z"/>
+                            Watch Music Video
+                            <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                              <path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
                             </svg>
-                            Watch Video
                           </a>
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 bg-white rounded-lg shadow-lg">
+                  <h3 className="text-xl font-bold text-gray-600 mb-4">
+                    No Song Details Available
+                  </h3>
+                  <p className="text-gray-500">
+                    Song information will be displayed here once available.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   )
 }
