@@ -14,7 +14,7 @@ export default function PopularSongs({ songs }: PopularSongsProps) {
       <section className="py-16">
         <div className="text-center">
           <h2 className="text-4xl font-bold mb-8">Popular Songs</h2>
-          <p className="text-gray-600">Song information coming soon.</p>
+          <p className="text-gray-600">Songs coming soon.</p>
         </div>
       </section>
     )
@@ -32,64 +32,88 @@ export default function PopularSongs({ songs }: PopularSongsProps) {
           <span className="text-gradient">Popular Songs</span>
         </h2>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-          The hits that defined a generation and continue to inspire fans worldwide
+          The hits that defined a generation and shaped pop-punk forever
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
         {songs.map((song, index) => (
           <motion.div
             key={song.id}
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: index * 0.1 }}
+            className="bg-white rounded-xl shadow-lg overflow-hidden card-hover group"
           >
-            <Link href={`/songs/${song.slug}`}>
-              <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 p-6 card-hover border-l-4 border-primary">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-1 hover:text-primary transition-colors duration-300">
-                      {song.metadata?.title || song.title}
-                    </h3>
-                    
-                    {song.metadata?.album?.title && (
-                      <p className="text-gray-600 text-sm">
-                        from <em>{song.metadata.album.title}</em>
-                      </p>
-                    )}
-                  </div>
-                  
-                  {song.metadata?.length && (
-                    <span className="text-primary font-medium text-sm bg-primary bg-opacity-10 px-2 py-1 rounded">
-                      {song.metadata.length}
+            {/* Album Art */}
+            {song.metadata?.album?.metadata?.album_art?.imgix_url && (
+              <div className="aspect-square overflow-hidden">
+                <img
+                  src={`${song.metadata.album.metadata.album_art.imgix_url}?w=600&h=600&fit=crop&auto=format,compress`}
+                  alt={song.metadata.album.metadata.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  width={300}
+                  height={300}
+                />
+              </div>
+            )}
+
+            <div className="p-6">
+              {/* Theme Badge */}
+              {song.metadata?.theme?.value && (
+                <span className="inline-block bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-full text-xs font-medium mb-3">
+                  {song.metadata.theme.value}
+                </span>
+              )}
+
+              {/* Song Title */}
+              <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-primary transition-colors">
+                {song.metadata?.title || song.title}
+              </h3>
+
+              {/* Album Info */}
+              {song.metadata?.album?.metadata?.title && (
+                <div className="text-gray-600 text-sm mb-2">
+                  from <span className="font-medium">{song.metadata.album.metadata.title}</span>
+                  {song.metadata.album.metadata.release_date && (
+                    <span className="ml-2 text-gray-500">
+                      ({new Date(song.metadata.album.metadata.release_date).getFullYear()})
                     </span>
                   )}
                 </div>
+              )}
 
-                {song.metadata?.writers && (
-                  <p className="text-gray-500 text-sm mb-3">
-                    Written by {song.metadata.writers}
-                  </p>
-                )}
+              {/* Song Length */}
+              {song.metadata?.length && (
+                <div className="text-gray-500 text-sm mb-4">
+                  Duration: {song.metadata.length}
+                </div>
+              )}
 
-                {song.metadata?.theme?.value && (
-                  <span className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
-                    {song.metadata.theme.value}
-                  </span>
-                )}
-
-                {song.metadata?.music_video && (
-                  <div className="mt-4">
-                    <span className="inline-flex items-center text-primary text-sm font-medium">
-                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                      Music Video Available
-                    </span>
+              {/* Lyrics Preview */}
+              {song.metadata?.lyrics && (
+                <div className="mb-4">
+                  <div className="text-gray-700 text-sm italic line-clamp-2">
+                    "{song.metadata.lyrics.split('\n')[0]}"
                   </div>
-                )}
-              </div>
-            </Link>
+                </div>
+              )}
+
+              {/* Music Video Link */}
+              {song.metadata?.music_video && (
+                <a
+                  href={song.metadata.music_video}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  Watch Video
+                </a>
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -98,7 +122,7 @@ export default function PopularSongs({ songs }: PopularSongsProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.5 }}
-        className="text-center mt-12"
+        className="text-center"
       >
         <Link
           href="/songs"

@@ -1,10 +1,9 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
 import { getBandMembers } from '@/lib/cosmic'
 
 export const metadata: Metadata = {
-  title: 'Band Members - blink-182',
-  description: 'Meet the legendary members of blink-182: Tom DeLonge, Mark Hoppus, Travis Barker, and the others who shaped pop-punk history.',
+  title: 'Band Members - Meet blink-182',
+  description: 'Get to know the talented musicians behind blink-182: Tom DeLonge, Mark Hoppus, and Travis Barker. Learn about their history, roles, and contributions.',
 }
 
 export default async function BandPage() {
@@ -19,7 +18,7 @@ export default async function BandPage() {
             The Band
           </h1>
           <p className="text-xl max-w-2xl mx-auto text-white text-opacity-90">
-            The legendary musicians who created the soundtrack to a generation
+            Meet the legendary musicians who shaped the sound of pop-punk
           </p>
         </div>
       </section>
@@ -28,64 +27,75 @@ export default async function BandPage() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           {members.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="max-w-6xl mx-auto space-y-16">
               {members.map((member, index) => (
-                <Link key={member.id} href={`/band/${member.slug}`}>
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover text-center">
-                    <div className="aspect-square overflow-hidden">
-                      {member.metadata?.profile_image?.imgix_url ? (
+                <div 
+                  key={member.id} 
+                  className={`bg-white rounded-2xl shadow-lg overflow-hidden card-hover ${
+                    index % 2 === 1 ? 'lg:flex-row-reverse' : ''
+                  }`}
+                >
+                  <div className="flex flex-col lg:flex-row">
+                    {/* Profile Image */}
+                    {member.metadata?.profile_image?.imgix_url && (
+                      <div className="lg:w-1/2 flex-shrink-0">
                         <img
-                          src={`${member.metadata.profile_image.imgix_url}?w=600&h=600&fit=crop&auto=format,compress`}
-                          alt={member.metadata.name || member.title}
-                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                          width={300}
-                          height={300}
+                          src={`${member.metadata.profile_image.imgix_url}?w=1200&h=800&fit=crop&auto=format,compress`}
+                          alt={member.metadata.name}
+                          className="w-full h-64 lg:h-96 object-cover"
+                          width={600}
+                          height={400}
                         />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary to-pink-400 flex items-center justify-center">
-                          <span className="text-white text-6xl font-bold">
-                            {(member.metadata?.name || member.title).charAt(0)}
-                          </span>
+                      </div>
+                    )}
+
+                    {/* Content */}
+                    <div className="flex-1 p-8 lg:p-12 flex flex-col justify-center">
+                      {/* Role Badge */}
+                      {member.metadata?.role && (
+                        <span className="inline-block bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-full text-sm font-bold mb-4 w-fit">
+                          {member.metadata.role}
+                        </span>
+                      )}
+
+                      {/* Name */}
+                      <h2 className="text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
+                        {member.metadata?.name || member.title}
+                      </h2>
+
+                      {/* Years Active */}
+                      {member.metadata?.years_active && (
+                        <div className="text-gray-600 mb-6">
+                          <span className="font-medium">Years Active: </span>
+                          {member.metadata.years_active}
                         </div>
                       )}
-                    </div>
 
-                    <div className="p-6">
-                      <h3 className="text-2xl font-bold mb-2 hover:text-primary transition-colors duration-300">
-                        {member.metadata?.name || member.title}
-                      </h3>
-                      
-                      {member.metadata?.role && (
-                        <p className="text-primary font-medium text-lg mb-3">
-                          {member.metadata.role}
-                        </p>
-                      )}
-                      
-                      {member.metadata?.years_active && (
-                        <p className="text-gray-600 text-sm mb-4">
-                          Active: {member.metadata.years_active}
-                        </p>
-                      )}
-
+                      {/* Bio */}
                       {member.metadata?.bio && (
                         <div 
-                          className="text-gray-600 text-sm line-clamp-4 mb-4"
-                          dangerouslySetInnerHTML={{ 
-                            __html: member.metadata.bio.replace(/<[^>]*>/g, '').substring(0, 200) + '...'
-                          }} 
+                          className="text-gray-700 mb-8 prose prose-lg"
+                          dangerouslySetInnerHTML={{ __html: member.metadata.bio }}
                         />
                       )}
 
+                      {/* Fun Facts */}
                       {member.metadata?.fun_facts && (
-                        <div className="bg-primary bg-opacity-5 p-3 rounded-lg">
-                          <p className="text-xs text-gray-600 font-medium">
-                            {member.metadata.fun_facts.split('\n')[0]}
-                          </p>
+                        <div className="bg-gradient-to-r from-primary bg-opacity-5 to-pink-50 p-6 rounded-lg border-l-4 border-primary">
+                          <h3 className="font-bold text-lg mb-4 text-primary">Fun Facts</h3>
+                          <div className="text-gray-700 whitespace-pre-line space-y-1">
+                            {member.metadata.fun_facts.split('\n').map((fact, factIndex) => (
+                              <div key={factIndex} className="flex items-start">
+                                <span className="text-primary mr-2">•</span>
+                                <span>{fact.replace('• ', '')}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
