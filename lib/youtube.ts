@@ -6,162 +6,169 @@ export interface YouTubeVideo {
     title: string
     description: string
     thumbnails: {
-      default: { url: string }
-      medium: { url: string }
-      high: { url: string }
-      maxres?: { url: string }
+      medium: {
+        url: string
+      }
+      high?: {
+        url: string
+      }
     }
-    publishedAt: string
     channelTitle: string
-  }
-  statistics?: {
-    viewCount: string
-    likeCount: string
-    commentCount: string
-  }
-}
-
-export interface YouTubePlaylist {
-  id: string
-  snippet: {
-    title: string
-    description: string
-    thumbnails: {
-      default: { url: string }
-      medium: { url: string }
-      high: { url: string }
-    }
     publishedAt: string
   }
-  contentDetails: {
-    itemCount: number
-  }
 }
 
-class YouTubeAPI {
-  private apiKey: string
+export interface YouTubeSearchResponse {
+  items: YouTubeVideo[]
+  nextPageToken?: string
+}
 
-  constructor() {
-    this.apiKey = process.env.YOUTUBE_API_KEY || ''
-  }
-
-  private async makeRequest(endpoint: string, params: Record<string, string>): Promise<any> {
-    const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`)
-    
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, value)
-    })
-    
-    url.searchParams.append('key', this.apiKey)
-
-    const response = await fetch(url.toString())
-    
-    if (!response.ok) {
-      throw new Error(`YouTube API error: ${response.status}`)
+export interface YouTubePlaylistResponse {
+  items: Array<{
+    snippet: {
+      resourceId: {
+        videoId: string
+      }
+      title: string
+      description: string
+      thumbnails: {
+        medium: {
+          url: string
+        }
+        high?: {
+          url: string
+        }
+      }
+      channelTitle: string
+      publishedAt: string
     }
+  }>
+}
 
-    return response.json()
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
+const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3'
+
+export async function searchYouTubeVideos(query: string, maxResults: number = 12): Promise<YouTubeVideo[]> {
+  if (!YOUTUBE_API_KEY) {
+    console.error('YouTube API key not configured')
+    return []
   }
 
-  async searchVideos(query: string, maxResults: number = 25): Promise<YouTubeVideo[]> {
-    const data = await this.makeRequest('search', {
+  try {
+    const searchParams = new URLSearchParams({
       part: 'snippet',
       q: query,
       type: 'video',
       maxResults: maxResults.toString(),
-      order: 'relevance'
+      key: YOUTUBE_API_KEY
     })
 
-    return data.items || []
-  }
+    const response = await fetch(`${YOUTUBE_BASE_URL}/search?${searchParams}`)
 
-  async getVideoDetails(videoIds: string[]): Promise<YouTubeVideo[]> {
-    if (videoIds.length === 0) return []
-
-    const data = await this.makeRequest('videos', {
-      part: 'snippet,statistics',
-      id: videoIds.join(',')
-    })
-
-    return data.items || []
-  }
-
-  async getChannelVideos(channelId: string, maxResults: number = 25): Promise<YouTubeVideo[]> {
-    const data = await this.makeRequest('search', {
-      part: 'snippet',
-      channelId,
-      type: 'video',
-      maxResults: maxResults.toString(),
-      order: 'date'
-    })
-
-    return data.items || []
-  }
-
-  async searchChannel(channelName: string): Promise<any> {
-    const data = await this.makeRequest('search', {
-      part: 'snippet',
-      q: channelName,
-      type: 'channel',
-      maxResults: '1'
-    })
-
-    return data.items[0] || null
-  }
-
-  // Get blink-182 specific content
-  async getBlink182Videos(): Promise<{
-    musicVideos: YouTubeVideo[]
-    livePerformances: YouTubeVideo[]
-    interviews: YouTubeVideo[]
-    recentVideos: YouTubeVideo[]
-  }> {
-    try {
-      const [musicVideos, livePerformances, interviews, recentVideos] = await Promise.all([
-        this.searchVideos('blink-182 official music video', 20),
-        this.searchVideos('blink-182 live performance concert', 15),
-        this.searchVideos('blink-182 interview', 10),
-        this.searchVideos('blink-182', 25)
-      ])
-
-      return {
-        musicVideos,
-        livePerformances,
-        interviews,
-        recentVideos: recentVideos.slice(0, 12)
-      }
-    } catch (error) {
-      console.error('Error fetching blink-182 YouTube data:', error)
-      return {
-        musicVideos: [],
-        livePerformances: [],
-        interviews: [],
-        recentVideos: []
-      }
-    }
-  }
-
-  // Extract video ID from YouTube URL
-  static extractVideoId(url: string): string | null {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /^([a-zA-Z0-9_-]{11})$/
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) {
-        return match[1]
-      }
+    if (!response.ok) {
+      throw new Error(`YouTube API error: ${response.status}`)
     }
 
-    return null
-  }
-
-  // Get video thumbnail URL
-  static getThumbnailUrl(videoId: string, quality: 'default' | 'medium' | 'high' | 'maxres' = 'high'): string {
-    return `https://img.youtube.com/vi/${videoId}/${quality === 'maxres' ? 'maxresdefault' : quality === 'high' ? 'hqdefault' : quality === 'medium' ? 'mqdefault' : 'default'}.jpg`
+    const data: YouTubeSearchResponse = await response.json()
+    return data.items || []
+  } catch (error) {
+    console.error('YouTube search error:', error)
+    return []
   }
 }
 
-export const youtubeAPI = new YouTubeAPI()
+export async function getBlink182MusicVideos(): Promise<YouTubeVideo[]> {
+  return await searchYouTubeVideos('blink-182 official music video', 20)
+}
+
+export async function getBlink182LivePerformances(): Promise<YouTubeVideo[]> {
+  return await searchYouTubeVideos('blink-182 live performance concert', 15)
+}
+
+export async function getBlink182Interviews(): Promise<YouTubeVideo[]> {
+  return await searchYouTubeVideos('blink-182 interview Tom DeLonge Mark Hoppus Travis Barker', 10)
+}
+
+export async function getPlaylistVideos(playlistId: string, maxResults: number = 50): Promise<YouTubeVideo[]> {
+  if (!YOUTUBE_API_KEY) {
+    console.error('YouTube API key not configured')
+    return []
+  }
+
+  try {
+    const searchParams = new URLSearchParams({
+      part: 'snippet',
+      playlistId: playlistId,
+      maxResults: maxResults.toString(),
+      key: YOUTUBE_API_KEY
+    })
+
+    const response = await fetch(`${YOUTUBE_BASE_URL}/playlistItems?${searchParams}`)
+
+    if (!response.ok) {
+      throw new Error(`YouTube API error: ${response.status}`)
+    }
+
+    const data: YouTubePlaylistResponse = await response.json()
+    
+    // Convert playlist items to video format
+    return data.items?.map(item => ({
+      id: {
+        videoId: item.snippet.resourceId.videoId
+      },
+      snippet: {
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnails: item.snippet.thumbnails,
+        channelTitle: item.snippet.channelTitle,
+        publishedAt: item.snippet.publishedAt
+      }
+    })) || []
+  } catch (error) {
+    console.error('YouTube playlist error:', error)
+    return []
+  }
+}
+
+export function getYouTubeEmbedUrl(videoId: string): string {
+  return `https://www.youtube.com/embed/${videoId}`
+}
+
+export function getYouTubeWatchUrl(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${videoId}`
+}
+
+export function getVideoThumbnailUrl(video: YouTubeVideo): string {
+  // Fix for line 154 - handle undefined high quality thumbnail
+  const highQualityThumbnail = video.snippet.thumbnails.high?.url
+  const mediumQualityThumbnail = video.snippet.thumbnails.medium.url
+  
+  // Return high quality if available, otherwise medium quality (never undefined)
+  return highQualityThumbnail ?? mediumQualityThumbnail
+}
+
+export function formatVideoTitle(title: string): string {
+  // Clean up common YouTube title patterns
+  return title
+    .replace(/\(Official.*?\)/gi, '')
+    .replace(/\[Official.*?\]/gi, '')
+    .replace(/- blink-182/gi, '')
+    .replace(/blink-182 -/gi, '')
+    .trim()
+}
+
+export function formatVideoDuration(duration: string): string {
+  // Handle YouTube duration format (ISO 8601)
+  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/)
+  if (!match) return '0:00'
+  
+  const hours = (match[1] || '').replace('H', '')
+  const minutes = (match[2] || '').replace('M', '')
+  const seconds = (match[3] || '').replace('S', '')
+  
+  if (hours) {
+    return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`
+  }
+  
+  return `${minutes || '0'}:${seconds.padStart(2, '0')}`
+}

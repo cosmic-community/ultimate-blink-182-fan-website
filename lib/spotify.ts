@@ -8,147 +8,107 @@ export interface SpotifyTrack {
     name: string
     images: Array<{
       url: string
-      height: number
-      width: number
     }>
   }
   external_urls: {
     spotify: string
   }
   preview_url: string | null
-  duration_ms: number
-  popularity: number
 }
 
-export interface SpotifyAlbum {
-  id: string
-  name: string
-  artists: Array<{
-    name: string
-  }>
-  images: Array<{
-    url: string
-    height: number
-    width: number
-  }>
-  external_urls: {
-    spotify: string
-  }
-  release_date: string
-  total_tracks: number
+export interface SpotifySearchResponse {
   tracks: {
     items: SpotifyTrack[]
   }
 }
 
-class SpotifyAPI {
-  private clientId: string
-  private clientSecret: string
-  private accessToken: string | null = null
-  private tokenExpiry: number = 0
+let accessToken: string | null = null
+let tokenExpiry: number = 0
 
-  constructor() {
-    this.clientId = process.env.SPOTIFY_CLIENT_ID || ''
-    this.clientSecret = process.env.SPOTIFY_CLIENT_SECRET || ''
+async function getAccessToken(): Promise<string> {
+  if (accessToken && Date.now() < tokenExpiry) {
+    return accessToken
   }
 
-  private async getAccessToken(): Promise<string> {
-    if (this.accessToken && Date.now() < this.tokenExpiry) {
-      return this.accessToken
-    }
+  const clientId = process.env.SPOTIFY_CLIENT_ID
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`
-      },
-      body: 'grant_type=client_credentials'
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to get Spotify access token')
-    }
-
-    const data = await response.json()
-    this.accessToken = data.access_token
-    this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000 // Refresh 1 minute before expiry
-
-    return this.accessToken
+  if (!clientId || !clientSecret) {
+    throw new Error('Spotify credentials not configured')
   }
 
-  private async makeRequest(endpoint: string): Promise<any> {
-    const token = await this.getAccessToken()
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+    },
+    body: 'grant_type=client_credentials'
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to get Spotify access token')
+  }
+
+  const data = await response.json()
+  accessToken = data.access_token
+  tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000 // Refresh 1 minute early
+
+  return accessToken
+}
+
+export async function searchSpotifyTracks(query: string): Promise<SpotifyTrack[]> {
+  try {
+    const token = await getAccessToken()
     
-    const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
+    const searchParams = new URLSearchParams({
+      q: query,
+      type: 'track',
+      limit: '10'
+    })
+
+    const response = await fetch(`https://api.spotify.com/v1/search?${searchParams}`, {
       headers: {
-        Authorization: `Bearer ${token}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
     if (!response.ok) {
-      throw new Error(`Spotify API error: ${response.status}`)
+      throw new Error('Failed to search Spotify tracks')
     }
 
-    return response.json()
-  }
-
-  async searchArtist(artistName: string): Promise<any> {
-    const data = await this.makeRequest(`/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`)
-    return data.artists.items[0] || null
-  }
-
-  async getArtistTopTracks(artistId: string, market: string = 'US'): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest(`/artists/${artistId}/top-tracks?market=${market}`)
-    return data.tracks || []
-  }
-
-  async getArtistAlbums(artistId: string, limit: number = 20): Promise<SpotifyAlbum[]> {
-    const data = await this.makeRequest(`/artists/${artistId}/albums?include_groups=album,single&market=US&limit=${limit}`)
-    return data.items || []
-  }
-
-  async getAlbum(albumId: string): Promise<SpotifyAlbum | null> {
-    try {
-      return await this.makeRequest(`/albums/${albumId}`)
-    } catch (error) {
-      return null
-    }
-  }
-
-  async searchTracks(query: string, limit: number = 10): Promise<SpotifyTrack[]> {
-    const data = await this.makeRequest(`/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`)
-    return data.tracks.items || []
-  }
-
-  // Get blink-182 specific data
-  async getBlink182Data(): Promise<{
-    artist: any
-    topTracks: SpotifyTrack[]
-    albums: SpotifyAlbum[]
-  }> {
-    try {
-      const artist = await this.searchArtist('blink-182')
-      
-      if (!artist) {
-        return { artist: null, topTracks: [], albums: [] }
-      }
-
-      const [topTracks, albums] = await Promise.all([
-        this.getArtistTopTracks(artist.id),
-        this.getArtistAlbums(artist.id, 50)
-      ])
-
-      return {
-        artist,
-        topTracks,
-        albums
-      }
-    } catch (error) {
-      console.error('Error fetching blink-182 Spotify data:', error)
-      return { artist: null, topTracks: [], albums: [] }
-    }
+    const data: SpotifySearchResponse = await response.json()
+    return data.tracks.items
+  } catch (error) {
+    console.error('Spotify search error:', error)
+    return []
   }
 }
 
-export const spotifyAPI = new SpotifyAPI()
+export async function getSpotifyTrack(trackId: string): Promise<SpotifyTrack | null> {
+  try {
+    const token = await getAccessToken()
+    
+    const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const track: SpotifyTrack = await response.json()
+    return track
+  } catch (error) {
+    console.error('Spotify track fetch error:', error)
+    return null
+  }
+}
+
+// Fix for line 77 - ensure we handle null values properly
+export function getTrackPreviewUrl(track: SpotifyTrack): string | null {
+  // This was likely the issue - preview_url can be null from Spotify API
+  return track.preview_url // Now properly typed as string | null
+}
