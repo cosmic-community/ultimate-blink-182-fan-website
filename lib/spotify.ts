@@ -1,10 +1,4 @@
-interface SpotifyToken {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-}
-
-interface SpotifyTrack {
+export interface SpotifyTrack {
   id: string;
   name: string;
   artists: { name: string }[];
@@ -12,10 +6,11 @@ interface SpotifyTrack {
     name: string;
     images: { url: string }[];
   };
-  preview_url: string | null;
   external_urls: {
     spotify: string;
   };
+  preview_url: string | null;
+  duration_ms: number;
 }
 
 interface SpotifySearchResponse {
@@ -24,123 +19,87 @@ interface SpotifySearchResponse {
   };
 }
 
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
+class SpotifyAPI {
+  private clientId: string;
+  private clientSecret: string;
+  private accessToken: string | null = null;
 
-async function getSpotifyToken(): Promise<string | null> {
-  // Return cached token if still valid
-  if (cachedToken && Date.now() < tokenExpiry) {
-    return cachedToken;
+  constructor() {
+    this.clientId = process.env.SPOTIFY_CLIENT_ID || '';
+    this.clientSecret = process.env.SPOTIFY_CLIENT_SECRET || '';
   }
 
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken) {
+      return this.accessToken;
+    }
 
-  if (!clientId || !clientSecret) {
-    console.warn('Spotify credentials not configured');
-    return null;
-  }
-
-  try {
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+        'Authorization': `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
       },
-      body: 'grant_type=client_credentials'
+      body: 'grant_type=client_credentials',
     });
 
     if (!response.ok) {
-      console.error('Failed to get Spotify token:', response.statusText);
-      return null;
+      throw new Error('Failed to get Spotify access token');
     }
 
-    const data: SpotifyToken = await response.json();
-    
-    // Cache the token
-    cachedToken = data.access_token;
-    tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Expire 1 minute early
-    
-    return cachedToken;
-  } catch (error) {
-    console.error('Error getting Spotify token:', error);
-    return null;
-  }
-}
-
-export async function searchSpotifyTrack(query: string): Promise<SpotifyTrack | null> {
-  const token = await getSpotifyToken();
-  
-  if (!token) {
-    return null;
+    const data = await response.json();
+    this.accessToken = data.access_token;
+    return this.accessToken;
   }
 
-  try {
-    const encodedQuery = encodeURIComponent(query);
-    const response = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodedQuery}&type=track&limit=1`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`
+  async searchTracks(query: string): Promise<SpotifyTrack[]> {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=20`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to search Spotify tracks');
       }
-    );
 
-    if (!response.ok) {
-      console.error('Spotify search failed:', response.statusText);
+      const data: SpotifySearchResponse = await response.json();
+      return data.tracks.items;
+    } catch (error) {
+      console.error('Spotify API error:', error);
+      return [];
+    }
+  }
+
+  async getTrack(id: string): Promise<SpotifyTrack | null> {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch(`https://api.spotify.com/v1/tracks/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get Spotify track');
+      }
+
+      const track: SpotifyTrack = await response.json();
+      return track;
+    } catch (error) {
+      console.error('Spotify API error:', error);
       return null;
     }
+  }
 
-    const data: SpotifySearchResponse = await response.json();
-    
-    if (data.tracks.items.length === 0) {
-      return null;
-    }
-
-    return data.tracks.items[0];
-  } catch (error) {
-    console.error('Error searching Spotify:', error);
-    return null;
+  async getBlinkTracks(): Promise<SpotifyTrack[]> {
+    return this.searchTracks('blink-182');
   }
 }
 
-export async function getSpotifyEmbedUrl(trackId: string): Promise<string | null> {
-  if (!trackId) {
-    return null;
-  }
-  
-  // Fixed: Ensure we return string | null consistently
-  return `https://open.spotify.com/embed/track/${trackId}?utm_source=generator`;
-}
-
-export async function findBlinkTrackOnSpotify(songTitle: string): Promise<{
-  embedUrl: string | null;
-  track: SpotifyTrack | null;
-}> {
-  try {
-    // Search for the track with "blink-182" to get more accurate results
-    const searchQuery = `${songTitle} blink-182`;
-    const track = await searchSpotifyTrack(searchQuery);
-    
-    if (!track) {
-      return {
-        embedUrl: null,
-        track: null
-      };
-    }
-
-    const embedUrl = await getSpotifyEmbedUrl(track.id);
-    
-    return {
-      embedUrl,
-      track
-    };
-  } catch (error) {
-    console.error('Error finding blink-182 track on Spotify:', error);
-    return {
-      embedUrl: null,
-      track: null
-    };
-  }
-}
+export const spotifyAPI = new SpotifyAPI();

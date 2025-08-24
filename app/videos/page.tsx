@@ -1,93 +1,72 @@
 import { Metadata } from 'next'
-import { Suspense } from 'react'
 import { youtubeAPI } from '@/lib/youtube'
 import YouTubeVideoGrid from '@/components/YouTubeVideoGrid'
 
 export const metadata: Metadata = {
-  title: 'Videos - blink-182 Music Videos & Performances',
-  description: 'Watch blink-182 music videos, live performances, and exclusive content on YouTube.',
+  title: 'Videos - blink-182 Music Videos & Live Performances',
+  description: 'Watch blink-182 music videos, live performances, interviews, and behind-the-scenes content.',
 }
 
-async function VideosContent() {
-  const youtubeData = await youtubeAPI.getBlink182Videos()
-
+export default async function VideosPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <section className="hero-gradient text-white py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Videos
+            Videos & Performances
           </h1>
           <p className="text-xl max-w-2xl mx-auto text-white text-opacity-90">
-            Music videos, live performances, and exclusive blink-182 content
+            Music videos, live performances, interviews, and behind-the-scenes content
           </p>
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-16 space-y-16">
-        {/* Music Videos */}
-        {youtubeData.musicVideos.length > 0 && (
-          <YouTubeVideoGrid 
-            videos={youtubeData.musicVideos} 
-            title="🎵 Official Music Videos"
-          />
-        )}
-
-        {/* Live Performances */}
-        {youtubeData.livePerformances.length > 0 && (
-          <YouTubeVideoGrid 
-            videos={youtubeData.livePerformances} 
-            title="🎤 Live Performances"
-          />
-        )}
-
-        {/* Interviews */}
-        {youtubeData.interviews.length > 0 && (
-          <YouTubeVideoGrid 
-            videos={youtubeData.interviews} 
-            title="💬 Interviews & Behind the Scenes"
-          />
-        )}
-
-        {/* Recent Videos */}
-        {youtubeData.recentVideos.length > 0 && (
-          <YouTubeVideoGrid 
-            videos={youtubeData.recentVideos} 
-            title="📺 Latest Videos"
-          />
-        )}
-
-        {/* No content fallback */}
-        {!youtubeData.musicVideos.length && 
-         !youtubeData.livePerformances.length && 
-         !youtubeData.interviews.length && 
-         !youtubeData.recentVideos.length && (
-          <div className="text-center py-16">
-            <h2 className="text-2xl font-bold text-gray-600 mb-4">
-              No Videos Available
+      {/* Music Videos */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">
+              <span className="text-gradient">Music Videos</span>
             </h2>
-            <p className="text-gray-500">
-              YouTube content will be displayed here once available.
+            <p className="text-gray-600 text-lg">
+              Iconic music videos from throughout blink-182's career
             </p>
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-export default function VideosPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading videos...</p>
+          
+          <YouTubeVideoGrid searchQuery="blink-182 music video" maxResults={12} />
         </div>
-      </div>
-    }>
-      <VideosContent />
-    </Suspense>
+      </section>
+
+      {/* Live Performances */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Live Performances</h2>
+            <p className="text-gray-600 text-lg">
+              Watch blink-182 perform live from concerts and festivals
+            </p>
+          </div>
+          
+          <YouTubeVideoGrid searchQuery="blink-182 live performance" maxResults={8} />
+        </div>
+      </section>
+
+      {/* Interviews & Behind the Scenes */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">
+              <span className="text-gradient">Interviews & More</span>
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Behind-the-scenes content and interviews with the band
+            </p>
+          </div>
+          
+          <YouTubeVideoGrid searchQuery="blink-182 interview behind the scenes" maxResults={8} />
+        </div>
+      </section>
+    </div>
   )
 }
