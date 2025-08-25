@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { getSongs } from '@/lib/cosmic'
 
 export const metadata: Metadata = {
-  title: 'Songs - blink-182 Greatest Hits & Deep Cuts',
-  description: 'Discover the complete collection of blink-182 songs, from chart-topping hits to fan favorites. Read lyrics, fun facts, and watch music videos.',
+  title: 'Songs - blink-182 Complete Discography',
+  description: 'Browse the complete blink-182 discography with lyrics, music videos, and song information for all their biggest hits and deep cuts.',
 }
 
 export default async function SongsPage() {
@@ -15,10 +16,10 @@ export default async function SongsPage() {
       <section className="hero-gradient text-white py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Songs
+            All Songs
           </h1>
           <p className="text-xl max-w-2xl mx-auto text-white text-opacity-90">
-            From anthems to deep cuts - explore the complete blink-182 songbook
+            Explore the complete blink-182 catalog - from classic hits to hidden gems
           </p>
         </div>
       </section>
@@ -27,119 +28,120 @@ export default async function SongsPage() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           {songs.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-              {songs.map((song) => (
-                <div key={song.id} className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
-                  <div className="p-8">
-                    {/* Song Header */}
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+            <>
+              {/* Filter by videos */}
+              <div className="mb-8">
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <Link
+                    href="/songs"
+                    className="bg-primary text-white px-6 py-2 rounded-full font-medium"
+                  >
+                    All Songs ({songs.length})
+                  </Link>
+                  <Link
+                    href="/videos"
+                    className="bg-white text-primary border-2 border-primary px-6 py-2 rounded-full font-medium hover:bg-primary hover:text-white transition-colors"
+                  >
+                    With Videos ({songs.filter(s => s.metadata?.music_video).length})
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {songs.map((song) => (
+                  <div key={song.id} className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    {/* Album Art */}
+                    {song.metadata?.album?.metadata?.album_art?.imgix_url && (
+                      <div className="aspect-square">
+                        <img
+                          src={`${song.metadata.album.metadata.album_art.imgix_url}?w=600&h=600&fit=crop&auto=format,compress`}
+                          alt={song.metadata.album.metadata.title}
+                          className="w-full h-full object-cover"
+                          width={300}
+                          height={300}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Content */}
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="text-xl font-bold text-gray-900 flex-1">
+                          {song.metadata?.title || song.title}
+                        </h3>
+                        {song.metadata?.music_video && (
+                          <div className="flex-shrink-0 ml-3">
+                            <div className="bg-red-100 text-red-600 p-2 rounded-full" title="Has music video">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        {song.metadata?.album?.metadata?.title && (
+                          <p className="text-gray-600">
+                            <span className="font-medium">Album:</span> {song.metadata.album.metadata.title}
+                          </p>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {song.metadata?.length && (
+                            <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                              {song.metadata.length}
+                            </span>
+                          )}
+                          
                           {song.metadata?.theme?.value && (
                             <span className="bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                               {song.metadata.theme.value}
                             </span>
                           )}
-                          {song.metadata?.length && (
-                            <span className="text-gray-500 text-sm">
-                              {song.metadata.length}
-                            </span>
-                          )}
                         </div>
 
-                        <h2 className="text-3xl font-bold mb-2 text-gray-900">
-                          {song.metadata?.title || song.title}
-                        </h2>
-
-                        <div className="flex flex-col gap-1 text-gray-600">
-                          {song.metadata?.album?.metadata?.title && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">Album:</span>
-                              <span className="font-medium text-primary">
-                                {song.metadata.album.metadata.title}
-                              </span>
-                              {song.metadata.album.metadata.release_date && (
-                                <span className="text-sm text-gray-500">
-                                  ({new Date(song.metadata.album.metadata.release_date).getFullYear()})
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {song.metadata?.writers && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">Writers:</span>
-                              <span className="text-sm">{song.metadata.writers}</span>
-                            </div>
-                          )}
-                        </div>
+                        {song.metadata?.writers && (
+                          <p className="text-gray-600 text-sm">
+                            <span className="font-medium">Writers:</span> {song.metadata.writers}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Album Art */}
-                      {song.metadata?.album?.metadata?.album_art?.imgix_url && (
-                        <div className="flex-shrink-0 ml-6">
-                          <img
-                            src={`${song.metadata.album.metadata.album_art.imgix_url}?w=200&h=200&fit=crop&auto=format,compress`}
-                            alt={song.metadata.album.metadata.title}
-                            className="w-20 h-20 rounded-lg shadow-md"
-                            width={80}
-                            height={80}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Lyrics Preview */}
-                    {song.metadata?.lyrics && (
-                      <div className="mb-6">
-                        <h3 className="font-bold text-lg mb-3">Lyrics</h3>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                            {song.metadata.lyrics.split('\n').slice(0, 8).join('\n')}
-                            {song.metadata.lyrics.split('\n').length > 8 && '\n...'}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Fun Facts */}
-                    {song.metadata?.fun_facts && (
-                      <div className="mb-6">
-                        <h3 className="font-bold text-lg mb-3">Fun Facts</h3>
-                        <div 
-                          className="text-gray-700 prose prose-sm"
-                          dangerouslySetInnerHTML={{ __html: song.metadata.fun_facts }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Music Video */}
-                    {song.metadata?.music_video && (
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                        <span className="text-sm text-gray-600">Music Video Available</span>
-                        <a
-                          href={song.metadata.music_video}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+                      <div className="flex gap-3">
+                        <Link
+                          href={`/songs/${song.slug}`}
+                          className="flex-1 bg-primary text-white text-center font-bold py-3 px-4 rounded-lg hover:bg-primary-600 transition-colors"
                         >
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                          Watch on YouTube
-                        </a>
+                          View Details
+                        </Link>
+                        
+                        {song.metadata?.music_video && (
+                          <a
+                            href={song.metadata.music_video}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                            title="Watch on YouTube"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                          </a>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="text-center py-16">
               <h2 className="text-2xl font-bold text-gray-600 mb-4">
                 No Songs Available
               </h2>
               <p className="text-gray-500">
-                Song information will be displayed here once available.
+                Songs will be displayed here once available.
               </p>
             </div>
           )}
