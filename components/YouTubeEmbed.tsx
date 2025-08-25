@@ -1,48 +1,46 @@
 'use client'
 
-import { useState } from 'react'
-
 interface YouTubeEmbedProps {
-  videoId: string
-  title?: string
-  autoplay?: boolean
-  className?: string
+  videoUrl: string;
+  title: string;
+  showTitle?: boolean;
+  className?: string;
 }
 
-export default function YouTubeEmbed({ 
-  videoId, 
-  title = 'YouTube Video',
-  autoplay = false,
-  className = ''
-}: YouTubeEmbedProps) {
-  const [isLoading, setIsLoading] = useState(true)
+function extractVideoId(url: string): string | null {
+  const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
 
-  // Fix the TypeScript error by properly handling undefined values
-  const embedUrl = `https://www.youtube.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`
+export default function YouTubeEmbed({ videoUrl, title, showTitle = true, className = '' }: YouTubeEmbedProps) {
+  const videoId = extractVideoId(videoUrl);
   
-  // Convert undefined to null for proper type compatibility
-  const videoTitle: string | null = title || null
-
-  const handleLoad = () => {
-    setIsLoading(false)
+  if (!videoId) {
+    return (
+      <div className={`bg-gray-100 rounded-lg p-8 text-center ${className}`}>
+        <p className="text-gray-600">Invalid YouTube URL</p>
+      </div>
+    );
   }
 
   return (
-    <div className={`relative w-full ${className}`}>
-      {isLoading && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
-          <div className="text-gray-500">Loading video...</div>
-        </div>
+    <div className={`space-y-4 ${className}`}>
+      {showTitle && (
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       )}
       
-      <iframe
-        src={embedUrl}
-        title={videoTitle || 'YouTube Video'}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="w-full aspect-video rounded-lg shadow-lg"
-        onLoad={handleLoad}
-      />
+      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+          title={title}
+          className="absolute inset-0 w-full h-full"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
     </div>
-  )
+  );
 }
+
+export type { YouTubeEmbedProps };
