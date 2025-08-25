@@ -1,50 +1,57 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 interface YouTubeEmbedProps {
-  videoUrl: string
+  videoId: string
   title?: string
-  showTitle?: boolean
-  className?: string
+  width?: number
+  height?: number
 }
 
 export default function YouTubeEmbed({ 
-  videoUrl, 
-  title = 'YouTube Video',
-  showTitle = false,
-  className = ''
+  videoId, 
+  title = 'YouTube Video', 
+  width = 560, 
+  height = 315 
 }: YouTubeEmbedProps) {
-  // Extract video ID from YouTube URL
-  const getVideoId = (url: string): string | null => {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-    const match = url.match(regex)
-    return match ? match[1] : null
-  }
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null)
 
-  const videoId = getVideoId(videoUrl)
+  useEffect(() => {
+    // Extract video ID from URL if full URL is provided
+    const extractVideoId = (url: string): string | null => {
+      const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
+      return match ? match[1] : url // Return original if it's already just an ID, null if no match
+    }
 
-  if (!videoId) {
+    const id = extractVideoId(videoId)
+    // Fix: Convert undefined to null explicitly
+    setEmbedUrl(id || null)
+  }, [videoId])
+
+  if (!embedUrl) {
     return (
-      <div className={`bg-gray-100 rounded-lg p-4 text-center ${className}`}>
-        <p className="text-gray-600">Invalid YouTube URL</p>
+      <div 
+        className="flex items-center justify-center bg-gray-200 rounded-lg"
+        style={{ width, height }}
+      >
+        <p className="text-gray-500">Loading video...</p>
       </div>
     )
   }
 
   return (
-    <div className={`relative ${className}`}>
-      {showTitle && title && (
-        <h3 className="text-lg font-semibold mb-3 text-gray-900">{title}</h3>
-      )}
-      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?rel=0`}
-          title={title}
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
-        />
-      </div>
+    <div className="relative overflow-hidden rounded-lg shadow-lg">
+      <iframe
+        width={width}
+        height={height}
+        src={`https://www.youtube.com/embed/${embedUrl}`}
+        title={title}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+      />
     </div>
   )
 }
