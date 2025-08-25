@@ -1,46 +1,73 @@
 'use client'
 
+import { useState } from 'react'
+
 interface YouTubeEmbedProps {
-  videoUrl: string;
-  title: string;
-  showTitle?: boolean;
-  className?: string;
+  url: string
+  title?: string
+  className?: string
 }
 
-function extractVideoId(url: string): string | null {
-  const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-}
+export default function YouTubeEmbed({ url, title, className = '' }: YouTubeEmbedProps) {
+  const [isLoaded, setIsLoaded] = useState(false)
 
-export default function YouTubeEmbed({ videoUrl, title, showTitle = true, className = '' }: YouTubeEmbedProps) {
-  const videoId = extractVideoId(videoUrl);
-  
+  // Extract video ID from YouTube URL - handle undefined by converting to null
+  const getVideoId = (url: string): string | null => {
+    try {
+      const urlObj = new URL(url)
+      const videoId = urlObj.searchParams.get('v') // This returns string | null (not undefined)
+      
+      if (videoId) {
+        return videoId
+      }
+
+      // Handle different YouTube URL formats
+      if (url.includes('youtu.be/')) {
+        const parts = url.split('youtu.be/')
+        if (parts.length > 1) {
+          return parts[1].split('?')[0] || null
+        }
+      }
+
+      if (url.includes('/embed/')) {
+        const parts = url.split('/embed/')
+        if (parts.length > 1) {
+          return parts[1].split('?')[0] || null
+        }
+      }
+
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  const videoId = getVideoId(url)
+
   if (!videoId) {
     return (
-      <div className={`bg-gray-100 rounded-lg p-8 text-center ${className}`}>
-        <p className="text-gray-600">Invalid YouTube URL</p>
+      <div className={`bg-gray-200 rounded-lg flex items-center justify-center p-8 ${className}`}>
+        <p className="text-gray-500">Invalid YouTube URL</p>
       </div>
-    );
+    )
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {showTitle && (
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div className={`relative aspect-video bg-gray-900 rounded-lg overflow-hidden ${className}`}>
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+          <div className="text-gray-500">Loading video...</div>
+        </div>
       )}
       
-      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-          title={title}
-          className="absolute inset-0 w-full h-full"
-          allowFullScreen
-          loading="lazy"
-        />
-      </div>
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title={title || 'YouTube Video'}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="absolute inset-0 w-full h-full"
+        onLoad={() => setIsLoaded(true)}
+      />
     </div>
-  );
+  )
 }
-
-export type { YouTubeEmbedProps };
