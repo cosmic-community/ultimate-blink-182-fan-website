@@ -1,44 +1,43 @@
 'use client'
 
+import { useState } from 'react'
+
 interface YouTubeEmbedProps {
-  videoUrl: string
+  videoId?: string
   title?: string
-  showTitle?: boolean
   className?: string
 }
 
-export default function YouTubeEmbed({ videoUrl, title, showTitle = true, className = '' }: YouTubeEmbedProps) {
-  // Extract video ID from YouTube URL
-  const getVideoId = (url: string): string | null => {
-    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
-    const match = url.match(regex)
-    return match ? match[1] : null
-  }
+export default function YouTubeEmbed({ videoId, title = 'YouTube Video', className = '' }: YouTubeEmbedProps) {
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  const videoId = getVideoId(videoUrl)
-  
-  if (!videoId) {
+  // Handle undefined videoId by converting to null for consistent type handling
+  const safeVideoId: string | null = videoId || null
+
+  if (!safeVideoId) {
     return (
-      <div className="bg-gray-200 rounded-lg p-8 text-center">
-        <p className="text-gray-500">Invalid YouTube URL</p>
+      <div className={`bg-gray-100 rounded-lg flex items-center justify-center p-8 ${className}`}>
+        <p className="text-gray-500">Video not available</p>
       </div>
     )
   }
 
   return (
-    <div className={`youtube-embed ${className}`}>
-      {showTitle && title && (
-        <h3 className="text-lg font-bold mb-4 text-gray-900">{title}</h3>
+    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
       )}
-      <div className="relative w-full h-0 pb-[56.25%] rounded-lg overflow-hidden shadow-lg">
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}`}
-          title={title || 'YouTube video'}
-          className="absolute top-0 left-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
+      
+      <iframe
+        src={`https://www.youtube.com/embed/${safeVideoId}?rel=0&modestbranding=1`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full aspect-video"
+        onLoad={() => setIsLoaded(true)}
+      />
     </div>
   )
 }
