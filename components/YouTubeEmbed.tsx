@@ -2,42 +2,79 @@
 
 import { useState } from 'react'
 
-interface YouTubeEmbedProps {
-  videoId?: string
-  title?: string
+export interface YouTubeEmbedProps {
+  videoUrl: string
+  title: string
+  showTitle?: boolean
   className?: string
 }
 
-export default function YouTubeEmbed({ videoId, title = 'YouTube Video', className = '' }: YouTubeEmbedProps) {
+function extractVideoId(url: string): string | null {
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&\n?#]+)/,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^&\n?#]+)/,
+    /(?:https?:\/\/)?youtu\.be\/([^&\n?#]+)/,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  
+  return null
+}
+
+export default function YouTubeEmbed({ 
+  videoUrl, 
+  title, 
+  showTitle = true, 
+  className = '' 
+}: YouTubeEmbedProps) {
   const [isLoaded, setIsLoaded] = useState(false)
+  const videoId = extractVideoId(videoUrl)
 
-  // Handle undefined videoId by converting to null for consistent type handling
-  const safeVideoId: string | null = videoId || null
-
-  if (!safeVideoId) {
+  if (!videoId) {
     return (
-      <div className={`bg-gray-100 rounded-lg flex items-center justify-center p-8 ${className}`}>
-        <p className="text-gray-500">Video not available</p>
+      <div className={`bg-gray-100 rounded-lg p-8 text-center ${className}`}>
+        <p className="text-gray-500">Invalid YouTube URL</p>
       </div>
     )
   }
 
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`
+
   return (
-    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>
-      {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-        </div>
+    <div className={`relative ${className}`}>
+      {showTitle && (
+        <h3 className="text-lg font-bold mb-3 text-gray-900">{title}</h3>
       )}
       
-      <iframe
-        src={`https://www.youtube.com/embed/${safeVideoId}?rel=0&modestbranding=1`}
-        title={title}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="w-full h-full aspect-video"
-        onLoad={() => setIsLoaded(true)}
-      />
+      <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+        {!isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-600 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+              <p className="text-sm">Loading video...</p>
+            </div>
+          </div>
+        )}
+        
+        <iframe
+          src={embedUrl}
+          title={title}
+          className="absolute inset-0 w-full h-full"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          onLoad={() => setIsLoaded(true)}
+        />
+      </div>
     </div>
   )
 }
