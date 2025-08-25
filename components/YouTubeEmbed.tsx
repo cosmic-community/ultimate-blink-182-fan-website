@@ -1,56 +1,44 @@
 'use client'
 
 interface YouTubeEmbedProps {
-  videoUrl: string;
-  title?: string;
-  className?: string;
+  videoUrl: string
+  title?: string
+  showTitle?: boolean
+  className?: string
 }
 
-export default function YouTubeEmbed({ videoUrl, title = "YouTube video", className = "" }: YouTubeEmbedProps) {
-  // Extract video ID from YouTube URL with proper null handling
+export default function YouTubeEmbed({ videoUrl, title, showTitle = true, className = '' }: YouTubeEmbedProps) {
+  // Extract video ID from YouTube URL
   const getVideoId = (url: string): string | null => {
-    if (!url) return null;
-    
-    try {
-      const urlObj = new URL(url);
-      
-      // Handle different YouTube URL formats
-      if (urlObj.hostname === 'youtu.be') {
-        return urlObj.pathname.slice(1) || null;
-      }
-      
-      if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
-        const videoId = urlObj.searchParams.get('v');
-        return videoId || null;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Invalid YouTube URL:', url);
-      return null;
-    }
-  };
-
-  const videoId = getVideoId(videoUrl);
-
-  // Return null if no valid video ID found
-  if (!videoId) {
-    console.warn('No valid YouTube video ID found for URL:', videoUrl);
-    return null;
+    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
+    const match = url.match(regex)
+    return match ? match[1] : null
   }
 
-  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  const videoId = getVideoId(videoUrl)
+  
+  if (!videoId) {
+    return (
+      <div className="bg-gray-200 rounded-lg p-8 text-center">
+        <p className="text-gray-500">Invalid YouTube URL</p>
+      </div>
+    )
+  }
 
   return (
-    <div className={`relative aspect-video ${className}`}>
-      <iframe
-        src={embedUrl}
-        title={title}
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="absolute inset-0 w-full h-full rounded-lg"
-      />
+    <div className={`youtube-embed ${className}`}>
+      {showTitle && title && (
+        <h3 className="text-lg font-bold mb-4 text-gray-900">{title}</h3>
+      )}
+      <div className="relative w-full h-0 pb-[56.25%] rounded-lg overflow-hidden shadow-lg">
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title={title || 'YouTube video'}
+          className="absolute top-0 left-0 w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
     </div>
-  );
+  )
 }
