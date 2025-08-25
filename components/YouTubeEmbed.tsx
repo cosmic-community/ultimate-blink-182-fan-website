@@ -2,65 +2,47 @@
 
 import { useState } from 'react'
 
-export interface YouTubeEmbedProps {
-  videoUrl: string
+interface YouTubeEmbedProps {
+  videoId: string
   title?: string
-  showTitle?: boolean
+  autoplay?: boolean
   className?: string
 }
 
 export default function YouTubeEmbed({ 
-  videoUrl, 
-  title, 
-  showTitle = true, 
-  className = '' 
+  videoId, 
+  title = 'YouTube Video',
+  autoplay = false,
+  className = ''
 }: YouTubeEmbedProps) {
   const [isLoading, setIsLoading] = useState(true)
 
-  // Extract video ID from YouTube URL
-  const getVideoId = (url: string): string | null => {
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
-    const match = url.match(regex)
-    return match ? match[1] : null
+  // Fix the TypeScript error by properly handling undefined values
+  const embedUrl = `https://www.youtube.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`
+  
+  // Convert undefined to null for proper type compatibility
+  const videoTitle: string | null = title || null
+
+  const handleLoad = () => {
+    setIsLoading(false)
   }
-
-  const videoId = getVideoId(videoUrl)
-
-  if (!videoId) {
-    return (
-      <div className={`bg-gray-100 rounded-lg p-8 text-center ${className}`}>
-        <p className="text-gray-500">Invalid YouTube URL</p>
-      </div>
-    )
-  }
-
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`
 
   return (
-    <div className={`relative ${className}`}>
-      {showTitle && title && (
-        <h3 className="text-lg font-semibold mb-3 text-gray-900">{title}</h3>
+    <div className={`relative w-full ${className}`}>
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
+          <div className="text-gray-500">Loading video...</div>
+        </div>
       )}
       
-      <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-lg">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
-            <div className="flex items-center space-x-2 text-white">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              <span>Loading video...</span>
-            </div>
-          </div>
-        )}
-        
-        <iframe
-          src={embedUrl}
-          title={title || 'YouTube video'}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          onLoad={() => setIsLoading(false)}
-        />
-      </div>
+      <iframe
+        src={embedUrl}
+        title={videoTitle || 'YouTube Video'}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full aspect-video rounded-lg shadow-lg"
+        onLoad={handleLoad}
+      />
     </div>
   )
 }
