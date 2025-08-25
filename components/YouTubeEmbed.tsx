@@ -1,73 +1,48 @@
 'use client'
 
-import { useState } from 'react'
-
 interface YouTubeEmbedProps {
-  url: string
-  title?: string
+  videoUrl: string
+  title: string
+  showTitle?: boolean
   className?: string
 }
 
-export default function YouTubeEmbed({ url, title, className = '' }: YouTubeEmbedProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
+function getVideoId(url: string): string | null {
+  if (!url) return null
+  
+  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+  const match = url.match(regex)
+  return match ? match[1] : null
+}
 
-  // Extract video ID from YouTube URL - handle undefined by converting to null
-  const getVideoId = (url: string): string | null => {
-    try {
-      const urlObj = new URL(url)
-      const videoId = urlObj.searchParams.get('v') // This returns string | null (not undefined)
-      
-      if (videoId) {
-        return videoId
-      }
-
-      // Handle different YouTube URL formats
-      if (url.includes('youtu.be/')) {
-        const parts = url.split('youtu.be/')
-        if (parts.length > 1) {
-          return parts[1].split('?')[0] || null
-        }
-      }
-
-      if (url.includes('/embed/')) {
-        const parts = url.split('/embed/')
-        if (parts.length > 1) {
-          return parts[1].split('?')[0] || null
-        }
-      }
-
-      return null
-    } catch {
-      return null
-    }
-  }
-
-  const videoId = getVideoId(url)
-
+export default function YouTubeEmbed({ videoUrl, title, showTitle = true, className = '' }: YouTubeEmbedProps) {
+  const videoId = getVideoId(videoUrl)
+  
   if (!videoId) {
     return (
-      <div className={`bg-gray-200 rounded-lg flex items-center justify-center p-8 ${className}`}>
+      <div className={`bg-gray-100 rounded-lg flex items-center justify-center p-8 ${className}`}>
         <p className="text-gray-500">Invalid YouTube URL</p>
       </div>
     )
   }
 
+  const embedUrl = `https://www.youtube.com/embed/${videoId}`
+  const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+
   return (
-    <div className={`relative aspect-video bg-gray-900 rounded-lg overflow-hidden ${className}`}>
-      {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-          <div className="text-gray-500">Loading video...</div>
-        </div>
+    <div className={`youtube-embed ${className}`}>
+      {showTitle && (
+        <h3 className="text-lg font-semibold mb-3">{title}</h3>
       )}
-      
-      <iframe
-        src={`https://www.youtube.com/embed/${videoId}`}
-        title={title || 'YouTube Video'}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="absolute inset-0 w-full h-full"
-        onLoad={() => setIsLoaded(true)}
-      />
+      <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+        <iframe
+          src={embedUrl}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+        />
+      </div>
     </div>
   )
 }
